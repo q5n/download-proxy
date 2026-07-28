@@ -84,8 +84,8 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "normal download",
 			makeURL: func() string {
-				expire := time.Now().Add(time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", expire)
+				timestamp := time.Now().Add(time.Hour).Unix()
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:          http.MethodGet,
 			wantStatus:      http.StatusOK,
@@ -95,8 +95,8 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "redirect to allowed host",
 			makeURL: func() string {
-				expire := time.Now().Add(time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/redirect", expire)
+				timestamp := time.Now().Add(time.Hour).Unix()
+				return buildProxyURL(proxy.URL, upstream.URL+"/redirect", timestamp)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusOK,
@@ -105,8 +105,8 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "redirect to disallowed host",
 			makeURL: func() string {
-				expire := time.Now().Add(time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/bad-redirect", expire)
+				timestamp := time.Now().Add(time.Hour).Unix()
+				return buildProxyURL(proxy.URL, upstream.URL+"/bad-redirect", timestamp)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusBadGateway,
@@ -114,10 +114,10 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "invalid signature",
 			makeURL: func() string {
-				expire := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(time.Hour).Unix()
 				target := upstream.URL + "/file"
 				return fmt.Sprintf("%s/download?url=%s&time=%d&sign=invalid",
-					proxy.URL, url.QueryEscape(target), expire)
+					proxy.URL, url.QueryEscape(target), timestamp)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusForbidden,
@@ -144,8 +144,8 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "blocked domain",
 			makeURL: func() string {
-				expire := time.Now().Add(time.Hour).Unix()
-				return buildProxyURL(proxy.URL, "https://evil.com/file", expire)
+				timestamp := time.Now().Add(time.Hour).Unix()
+				return buildProxyURL(proxy.URL, "https://evil.com/file", timestamp)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusForbidden,
@@ -161,8 +161,8 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "disallowed method",
 			makeURL: func() string {
-				expire := time.Now().Add(time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", expire)
+				timestamp := time.Now().Add(time.Hour).Unix()
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:     http.MethodPost,
 			wantStatus: http.StatusMethodNotAllowed,
