@@ -159,6 +159,15 @@ func TestProxyEndToEnd(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 		},
 		{
+			name: "malformed time",
+			makeURL: func() string {
+				return fmt.Sprintf("%s/download?url=%s&time=abc&sign=invalid",
+					proxy.URL, url.QueryEscape(upstream.URL+"/file"))
+			},
+			method:     http.MethodGet,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
 			name: "disallowed method",
 			makeURL: func() string {
 				timestamp := time.Now().Add(time.Hour).Unix()

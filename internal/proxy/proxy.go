@@ -2,11 +2,11 @@ package proxy
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/q5n/download-proxy/internal/config"
@@ -55,7 +55,7 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var timestamp int64
-	_, err := fmt.Sscan(timestampStr, &timestamp)
+	timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
 		http.Error(w, "invalid time", http.StatusBadRequest)
 		return

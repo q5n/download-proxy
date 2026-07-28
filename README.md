@@ -73,7 +73,7 @@ to the client.
     Supports `-o|--output OUTPUT`; defaults to `download-YYYYMMDD-HHmmss.tmp`.
 -   `scripts/test-download.ps1` — PowerShell 5.1 equivalent of
     `test-download.sh` for Windows clients. Supports `-OutputPath`; defaults
-    to `download-YYMMDD-HHmmss.tmp`.
+    to `download-YYYYMMDD-HHmmss.tmp`.
 
 ## Deployment
 
