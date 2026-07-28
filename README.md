@@ -57,6 +57,20 @@ Provide:
 The proxy fetches the file from the upstream server and streams it back
 to the client.
 
+## Scripts
+
+-   `scripts/install.sh` — One-command install on Debian 12. Downloads the
+    latest release binary, creates the `download-proxy` user, installs
+    `/etc/download-proxy/config.yaml`, and starts the systemd service.
+-   `scripts/release.sh` — Bump version, commit, push, and create a new
+    semver tag. Run with `+001`, `+010`, or `+100` to bump
+    patch, minor, or major respectively.
+
+## Deployment
+
+See [`docs/nginx.md`](docs/nginx.md) for an nginx reverse proxy + SSL
+termination configuration.
+
 ## Security
 
 The proxy uses HMAC-SHA256 signed URLs:
