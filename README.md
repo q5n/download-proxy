@@ -22,7 +22,7 @@ domain-based access control.
 
     Client
       |
-      | GET /download?url=xxx&expire=xxx&sign=xxx
+      | GET /download?url=xxx&time=xxx&sign=xxx
       |
     download-proxy
       |
@@ -62,9 +62,18 @@ to the client.
 -   `scripts/install.sh` — One-command install on Debian 12. Downloads the
     latest release binary, creates the `download-proxy` user, installs
     `/etc/download-proxy/config.yaml`, and starts the systemd service.
+    Supports `-p|--port PORT` and `-s|--secret SECRET`; if no secret is
+    provided, it prompts for interactive input.
 -   `scripts/release.sh` — Bump version, commit, push, and create a new
     semver tag. Run with `+001`, `+010`, or `+100` to bump
     patch, minor, or major respectively.
+-   `scripts/test-download.sh` — Construct a signed local test request.
+    Requires the target URL as an argument and reads the secret from the
+    `DOWNLOAD_PROXY_SECRET` environment variable or interactive input.
+    Supports `-o|--output OUTPUT`; defaults to `download-YYMMDD-HHmmss.tmp`.
+-   `scripts/test-download.ps1` — PowerShell 5.1 equivalent of
+    `test-download.sh` for Windows clients. Supports `-OutputPath`; defaults
+    to `download-YYMMDD-HHmmss.tmp`.
 
 ## Deployment
 
@@ -75,7 +84,7 @@ termination configuration.
 
 The proxy uses HMAC-SHA256 signed URLs:
 
-    signature = HMAC-SHA256(url + expire, secret)
+    signature = HMAC-SHA256(url + time, secret)
 
 Each download URL can have:
 
