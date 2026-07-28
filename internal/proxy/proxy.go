@@ -46,22 +46,22 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
 	target := q.Get("url")
-	expireStr := q.Get("expire")
+	timestampStr := q.Get("time")
 	sign := q.Get("sign")
 
-	if target == "" || expireStr == "" || sign == "" {
+	if target == "" || timestampStr == "" || sign == "" {
 		http.Error(w, "missing parameter", http.StatusBadRequest)
 		return
 	}
 
-	var expire int64
-	_, err := fmt.Sscan(expireStr, &expire)
+	var timestamp int64
+	_, err := fmt.Sscan(timestampStr, &timestamp)
 	if err != nil {
-		http.Error(w, "invalid expire", http.StatusBadRequest)
+		http.Error(w, "invalid time", http.StatusBadRequest)
 		return
 	}
 
-	if !security.Verify(target, expire, sign, p.Config.Secret, p.Config.MaxExpireSeconds) {
+	if !security.Verify(target, timestamp, sign, p.Config.Secret, p.Config.MaxExpireSeconds) {
 		http.Error(w, "invalid signature", http.StatusForbidden)
 		return
 	}

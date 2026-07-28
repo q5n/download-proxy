@@ -57,13 +57,13 @@ func startProxy(t *testing.T, upstream *httptest.Server) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(p.Handler))
 }
 
-func signURL(target string, expire int64) string {
-	return security.Sign(target, expire, testSecret)
+func signURL(target string, timestamp int64) string {
+	return security.Sign(target, timestamp, testSecret)
 }
 
-func buildProxyURL(proxy, target string, expire int64) string {
-	return fmt.Sprintf("%s/download?url=%s&expire=%d&sign=%s",
-		proxy, url.QueryEscape(target), expire, signURL(target, expire))
+func buildProxyURL(proxy, target string, timestamp int64) string {
+	return fmt.Sprintf("%s/download?url=%s&time=%d&sign=%s",
+		proxy, url.QueryEscape(target), timestamp, signURL(target, timestamp))
 }
 
 func TestProxyEndToEnd(t *testing.T) {
@@ -116,7 +116,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			makeURL: func() string {
 				expire := time.Now().Add(time.Hour).Unix()
 				target := upstream.URL + "/file"
-				return fmt.Sprintf("%s/download?url=%s&expire=%d&sign=invalid",
+				return fmt.Sprintf("%s/download?url=%s&time=%d&sign=invalid",
 					proxy.URL, url.QueryEscape(target), expire)
 			},
 			method:     http.MethodGet,
@@ -125,20 +125,21 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "expired timestamp",
 			makeURL: func() string {
-				expire := time.Now().Add(-time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", expire)
+				timestamp := time.Now().Add(-2 * time.Hour).Unix()
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusForbidden,
 		},
 		{
-			name: "excessive lifetime",
+			name: "future timestamp allowed",
 			makeURL: func() string {
-				expire := time.Now().Add(2 * time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", expire)
+				timestamp := time.Now().Add(time.Hour).Unix()
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:     http.MethodGet,
-			wantStatus: http.StatusForbidden,
+			wantStatus: http.StatusOK,
+			wantBody:   "hello proxy",
 		},
 		{
 			name: "blocked domain",
