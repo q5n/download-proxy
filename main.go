@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/q5n/download-proxy/internal/config"
@@ -15,6 +17,19 @@ func main() {
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
 		panic(err)
+	}
+
+	if cfg.LogFile != "" {
+		if err := os.MkdirAll(filepath.Dir(cfg.LogFile), 0755); err != nil {
+			log.Printf("warn: cannot create log directory: %v", err)
+		} else {
+			f, err := os.OpenFile(cfg.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Printf("warn: cannot open log file %s: %v", cfg.LogFile, err)
+			} else {
+				log.SetOutput(f)
+			}
+		}
 	}
 
 	p := proxy.New(cfg)

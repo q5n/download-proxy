@@ -44,6 +44,7 @@ allowed_domains:
   - objects.githubusercontent.com
   - release-assets.githubusercontent.com
   - githubusercontent.com
+log_file: /var/log/download-proxy/download-proxy.log
 EOF
     echo "Created default config at $CONFIG_DIR/config.yaml"
     echo "IMPORTANT: Change the secret before using in production."

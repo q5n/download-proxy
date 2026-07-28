@@ -1,4 +1,5 @@
 listen: ":8001"
+# log_file: /var/log/download-proxy/download-proxy.log
 
 secret: "change-this-secret"
 

@@ -12,6 +12,7 @@ type Config struct {
 	Secret           string   `yaml:"secret"`
 	MaxExpireSeconds int64    `yaml:"max_expire_seconds"`
 	AllowedDomains   []string `yaml:"allowed_domains"`
+	LogFile          string   `yaml:"log_file"`
 }
 
 // Load reads and parses the proxy configuration from the given YAML file.
