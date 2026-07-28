@@ -48,7 +48,7 @@ if [ -n "$DOWNLOAD_PROXY_SECRET" ]; then
     SECRET="$DOWNLOAD_PROXY_SECRET"
 else
     printf 'Enter secret: ' >&2
-    read -s -r SECRET
+    IFS= read -s -r SECRET
 fi
 
 if [ -z "$SECRET" ]; then
@@ -58,7 +58,7 @@ fi
 
 TIME=$(date +%s)
 
-# 纯 sh URL 编码
+# URL 编码
 url_encode() {
     local input="$1"
     local output=""

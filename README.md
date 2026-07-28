@@ -70,7 +70,7 @@ to the client.
 -   `scripts/test-download.sh` — Construct a signed local test request.
     Requires the target URL as an argument and reads the secret from the
     `DOWNLOAD_PROXY_SECRET` environment variable or interactive input.
-    Supports `-o|--output OUTPUT`; defaults to `download-YYMMDD-HHmmss.tmp`.
+    Supports `-o|--output OUTPUT`; defaults to `download-YYYYMMDD-HHmmss.tmp`.
 -   `scripts/test-download.ps1` — PowerShell 5.1 equivalent of
     `test-download.sh` for Windows clients. Supports `-OutputPath`; defaults
     to `download-YYMMDD-HHmmss.tmp`.
@@ -84,7 +84,7 @@ termination configuration.
 
 The proxy uses HMAC-SHA256 signed URLs:
 
-    signature = HMAC-SHA256(url + time, secret)
+    signature = HMAC-SHA256("url=<target-url>&time=<unix-seconds>", secret)
 
 Each download URL can have:
 
