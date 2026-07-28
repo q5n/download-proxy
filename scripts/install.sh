@@ -79,6 +79,7 @@ if [ -z "$LATEST_URL" ]; then
     exit 1
 fi
 
+echo "Download URL: $LATEST_URL"
 curl -fsSL -o "$INSTALL_DIR/download-proxy" "$LATEST_URL"
 chmod +x "$INSTALL_DIR/download-proxy"
 
