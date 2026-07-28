@@ -24,7 +24,7 @@ if (-not $secret) {
     exit 1
 }
 
-# 过期时间：5 分钟后（兼容 PowerShell 5.1）
+# 请求生成时间（兼容 PowerShell 5.1）
 $unixEpoch = New-Object DateTime (1970, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)
 $time = [int64](([DateTime]::UtcNow - $unixEpoch).TotalSeconds)
 
