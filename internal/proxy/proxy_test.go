@@ -84,7 +84,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "normal download",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Unix()
 				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:          http.MethodGet,

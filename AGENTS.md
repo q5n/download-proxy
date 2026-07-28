@@ -23,7 +23,7 @@ The HMAC is computed over the literal string:
 url=<target-url>&time=<unix-seconds>
 ```
 
-using HMAC-SHA256 with the configured secret, then hex-encoded. This differs slightly from the shorthand in `README.md`.
+using HMAC-SHA256 with the configured secret, then hex-encoded.
 
 ## Validation behavior
 
