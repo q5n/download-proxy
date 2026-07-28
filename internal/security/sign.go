@@ -19,7 +19,14 @@ func Sign(url string, timestamp int64, secret string) string {
 // Verify validates a signed download request against the expected HMAC signature and TTL.
 func Verify(url string, timestamp int64, sign string, secret string, maxExpire int64) bool {
 	now := time.Now().Unix()
+	maxSkew := int64(3 * 60) // Allow a 3-minute clock skew for future timestamps.
 
+	if timestamp < now-maxSkew {
+		return false
+	}
+	if timestamp > now+maxSkew {
+		return false
+	}
 	if maxExpire > 0 && now-timestamp > maxExpire {
 		return false
 	}

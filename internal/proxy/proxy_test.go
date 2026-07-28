@@ -95,7 +95,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "redirect to allowed host",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				return buildProxyURL(proxy.URL, upstream.URL+"/redirect", timestamp)
 			},
 			method:     http.MethodGet,
@@ -105,7 +105,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "redirect to disallowed host",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				return buildProxyURL(proxy.URL, upstream.URL+"/bad-redirect", timestamp)
 			},
 			method:     http.MethodGet,
@@ -114,7 +114,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "invalid signature",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				target := upstream.URL + "/file"
 				return fmt.Sprintf("%s/download?url=%s&time=%d&sign=invalid",
 					proxy.URL, url.QueryEscape(target), timestamp)
@@ -134,7 +134,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "future timestamp allowed",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:     http.MethodGet,
@@ -144,7 +144,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "blocked domain",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				return buildProxyURL(proxy.URL, "https://evil.com/file", timestamp)
 			},
 			method:     http.MethodGet,
@@ -170,7 +170,7 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "disallowed method",
 			makeURL: func() string {
-				timestamp := time.Now().Add(time.Hour).Unix()
+				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
 			},
 			method:     http.MethodPost,

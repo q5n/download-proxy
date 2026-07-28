@@ -8,6 +8,54 @@ DATA_DIR="/var/lib/download-proxy"
 LOG_DIR="/var/log/download-proxy"
 USER="download-proxy"
 
+PORT="8001"
+SECRET=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -p|--port)
+            PORT="${2:-}"
+            if [ -z "$PORT" ]; then
+                echo "Option $1 requires an argument" >&2
+                exit 1
+            fi
+            shift 2
+            ;;
+        -s|--secret)
+            SECRET="${2:-}"
+            if [ -z "$SECRET" ]; then
+                echo "Option $1 requires an argument" >&2
+                exit 1
+            fi
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 [-p|--port PORT] [-s|--secret SECRET]"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            echo "Usage: $0 [-p|--port PORT] [-s|--secret SECRET]" >&2
+            exit 1
+            ;;
+    esac
+done
+
+if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+    echo "Invalid port: $PORT" >&2
+    exit 1
+fi
+
+if [ -z "$SECRET" ]; then
+    printf 'Enter secret: ' >&2
+    read -r SECRET
+fi
+
+if [ -z "$SECRET" ]; then
+    echo "secret is required" >&2
+    exit 1
+fi
+
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" >&2
     exit 1
@@ -35,9 +83,9 @@ curl -fsSL -o "$INSTALL_DIR/download-proxy" "$LATEST_URL"
 chmod +x "$INSTALL_DIR/download-proxy"
 
 if [ ! -f "$CONFIG_DIR/config.yaml" ]; then
-    cat > "$CONFIG_DIR/config.yaml" <<'EOF'
-listen: ":8001"
-secret: "change-this-secret"
+    cat > "$CONFIG_DIR/config.yaml" <<EOF
+listen: ":${PORT}"
+secret: "${SECRET}"
 max_expire_seconds: 3600
 allowed_domains:
   - github.com
@@ -47,10 +95,9 @@ allowed_domains:
 log_file: /var/log/download-proxy/download-proxy.log
 EOF
     echo "Created default config at $CONFIG_DIR/config.yaml"
-    echo "IMPORTANT: Change the secret before using in production."
 fi
 
-chown -R root:root "$CONFIG_DIR"
+chown -R root:download-proxy "$CONFIG_DIR"
 chmod 640 "$CONFIG_DIR/config.yaml"
 
 cat > /etc/systemd/system/download-proxy.service <<EOF

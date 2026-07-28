@@ -41,4 +41,20 @@ func TestVerify(t *testing.T) {
 			t.Error("Verify() returned true for an expired timestamp")
 		}
 	})
+
+	t.Run("future timestamp beyond tolerance", func(t *testing.T) {
+		ts := time.Now().Add(6 * time.Minute).Unix()
+		sign := Sign(url, ts, secret)
+		if Verify(url, ts, sign, secret, maxExpire) {
+			t.Error("Verify() returned true for a timestamp more than 5 minutes in the future")
+		}
+	})
+
+	t.Run("future timestamp within tolerance", func(t *testing.T) {
+		ts := time.Now().Add(2 * time.Minute).Unix()
+		sign := Sign(url, ts, secret)
+		if !Verify(url, ts, sign, secret, maxExpire) {
+			t.Error("Verify() returned false for a timestamp within 5 minutes in the future")
+		}
+	})
 }
