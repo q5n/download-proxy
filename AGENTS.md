@@ -12,7 +12,7 @@ Single Go binary (`main.go`) that proxies signed download requests. Run with `go
 ## Runtime
 
 - Loads `config.yaml` from the current working directory at startup (not embedded).
-- Endpoint: `GET /download?url=<target>&expire=<unix>&sign=<hmac>`.
+- Endpoint: `GET /download?url=<target>&time=<unix>&sign=<hmac>`.
 - `config.yaml` ships with a placeholder `secret`; change it before deploying.
 
 ## Signature format (code is source of truth)
@@ -20,15 +20,15 @@ Single Go binary (`main.go`) that proxies signed download requests. Run with `go
 The HMAC is computed over the literal string:
 
 ```
-url=<target-url>&expire=<unix-seconds>
+url=<target-url>&time=<unix-seconds>
 ```
 
 using HMAC-SHA256 with the configured secret, then hex-encoded. This differs slightly from the shorthand in `README.md`.
 
 ## Validation behavior
 
-- Signature, `expire`, and `url` are all required query parameters.
-- `expire` is rejected if it is in the past or farther than `max_expire_seconds` in the future.
+- Signature, `time`, and `url` are all required query parameters.
+- `time` is the Unix timestamp when the URL was generated. The request is rejected if `now - time` exceeds `max_expire_seconds`.
 - The target URL's hostname must exactly match or be a subdomain of an entry in `allowed_domains`.
 
 ## Proxy behavior
@@ -49,4 +49,4 @@ using HMAC-SHA256 with the configured secret, then hex-encoded. This differs sli
 
 ## Testing
 
-There are no tests yet. `go test ./...` reports `[no test files]`.
+Tests exist in `internal/security` and `internal/proxy`. Run `go test ./...` to execute them.

@@ -48,7 +48,7 @@ if [ -n "$DOWNLOAD_PROXY_SECRET" ]; then
     SECRET="$DOWNLOAD_PROXY_SECRET"
 else
     printf 'Enter secret: ' >&2
-    read -r SECRET
+    read -s -r SECRET
 fi
 
 if [ -z "$SECRET" ]; then
