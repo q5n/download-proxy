@@ -1,6 +1,9 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,8 +14,26 @@ import (
 	"github.com/q5n/download-proxy/internal/proxy"
 )
 
+var version = "dev"
+
 // main starts the download proxy HTTP server. / 主函数：启动下载代理 HTTP 服务。
 func main() {
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("download-proxy", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+
+	showVersion := fs.Bool("v", false, "print version")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if *showVersion {
+		fmt.Fprintln(stdout, version)
+		return 0
+	}
+
 	// Load configuration and initialize the proxy server. / 加载配置并初始化代理服务。
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
@@ -51,4 +72,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	return 0
 }

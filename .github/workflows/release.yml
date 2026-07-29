@@ -23,7 +23,8 @@ jobs:
         env:
           CGO_ENABLED: 0
         run: |
-          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o download-proxy-linux-amd64 .
+          VERSION=${GITHUB_REF_NAME}
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION}" -o download-proxy-linux-amd64 .
 
       - name: Create Release
         env:

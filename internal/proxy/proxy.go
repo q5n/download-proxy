@@ -53,7 +53,7 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	sign := q.Get("sign")
 
 	if target == "" || timestampStr == "" || sign == "" {
-		log.Printf("missing request parameters target=%q time=%q sign=%q", target, timestampStr, sign != "")
+		log.Printf("missing request parameters target=%q time=%q signPresent=%t", target, timestampStr, sign != "")
 		http.Error(w, "missing parameter", http.StatusBadRequest)
 		return
 	}
