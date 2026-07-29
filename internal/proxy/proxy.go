@@ -39,7 +39,10 @@ func New(cfg *config.Config) *Proxy {
 
 // Handler serves the download endpoint, validates the signature, and streams the upstream response.
 func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("download request method=%s path=%s remote=%s", r.Method, r.URL.RequestURI(), r.RemoteAddr)
+
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		log.Printf("rejecting unsupported method method=%s", r.Method)
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -50,6 +53,7 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	sign := q.Get("sign")
 
 	if target == "" || timestampStr == "" || sign == "" {
+		log.Printf("missing request parameters target=%q time=%q sign=%q", target, timestampStr, sign != "")
 		http.Error(w, "missing parameter", http.StatusBadRequest)
 		return
 	}
@@ -57,15 +61,18 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	var timestamp int64
 	timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
+		log.Printf("invalid time parameter target=%s time=%s err=%v", target, timestampStr, err)
 		http.Error(w, "invalid time", http.StatusBadRequest)
 		return
 	}
 
 	if !security.Verify(target, timestamp, sign, p.Config.Secret, p.Config.MaxExpireSeconds) {
+		log.Printf("signature verification failed target=%s timestamp=%d", target, timestamp)
 		http.Error(w, "invalid signature", http.StatusForbidden)
 		return
 	}
 	if !p.allowed(target) {
+		log.Printf("blocked target domain target=%s", target)
 		http.Error(w, "domain blocked", http.StatusForbidden)
 		return
 	}
@@ -73,25 +80,29 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	// Build the upstream request and forward the client headers.
 	req, err := http.NewRequest(r.Method, target, nil)
 	if err != nil {
+		log.Printf("failed to create upstream request target=%s err=%v", target, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	req.Header = r.Header.Clone()
 
+	log.Printf("proxying upstream target=%s", target)
 	resp, err := p.Client.Do(req)
 	if err != nil {
+		log.Printf("upstream request failed target=%s err=%v", target, err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
 
+	log.Printf("upstream response received target=%s status=%d", target, resp.StatusCode)
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 
 	// Stream the response body directly to the client.
 	_, copyErr := io.Copy(w, resp.Body)
 	if copyErr != nil {
-		log.Printf("stream copy error: %v", copyErr)
+		log.Printf("stream copy error target=%s err=%v", target, copyErr)
 	}
 }
 

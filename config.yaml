@@ -7,7 +7,7 @@ max_expire_seconds: 3600
 
 allowed_domains:
   - github.com
-  - objects.githubusercontent.com
-  - release-assets.githubusercontent.com
   - githubusercontent.com
+  - githubassets.com
+  - githubcopilot.com
 
