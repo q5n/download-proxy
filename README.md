@@ -11,6 +11,7 @@ domain-based access control.
 
 -   🔗 Signed download URLs using HMAC-SHA256
 -   🔒 Expiration time validation to prevent unauthorized usage
+-   🎲 Random `nonce` parameter per request for replay protection
 -   🔄 Automatically follows HTTP redirects (3xx)
 -   🚀 Streams file content directly without buffering
 -   📦 Supports large files with low memory usage
@@ -22,7 +23,7 @@ domain-based access control.
 
     Client
       |
-      | GET /download?url=xxx&time=xxx&sign=xxx
+      | GET /download?url=xxx&time=xxx&nonce=xxx&sign=xxx
       |
     download-proxy
       |
@@ -84,13 +85,18 @@ termination configuration.
 
 The proxy uses HMAC-SHA256 signed URLs:
 
-    signature = HMAC-SHA256("url=<target-url>&time=<unix-seconds>", secret)
+    signature = HMAC-SHA256("url=<target-url>&time=<unix-seconds>&nonce=<nonce>", secret)
+
+`nonce` is a random caller-generated string that must be unique for each
+request; the server rejects a `nonce` that has been seen within the last
+5 minutes.
 
 Each download URL can have:
 
 -   expiration time
 -   allowed domains
 -   controlled access permissions
+-   replay protection via unique nonces
 
 ## License
 

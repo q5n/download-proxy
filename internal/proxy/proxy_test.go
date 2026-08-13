@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 )
 
 const testSecret = "test-secret"
+
+var nonceCounter atomic.Int64
 
 func startUpstream(t *testing.T) *httptest.Server {
 	t.Helper()
@@ -57,13 +60,17 @@ func startProxy(t *testing.T, upstream *httptest.Server) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(p.Handler))
 }
 
-func signURL(target string, timestamp int64) string {
-	return security.Sign(target, timestamp, testSecret)
+func nextNonce() string {
+	return fmt.Sprintf("nonce-%d", nonceCounter.Add(1))
 }
 
-func buildProxyURL(proxy, target string, timestamp int64) string {
-	return fmt.Sprintf("%s/download?url=%s&time=%d&sign=%s",
-		proxy, url.QueryEscape(target), timestamp, signURL(target, timestamp))
+func signURL(target string, timestamp int64, nonce string) string {
+	return security.Sign(target, timestamp, nonce, testSecret)
+}
+
+func buildProxyURL(proxy, target string, timestamp int64, nonce string) string {
+	return fmt.Sprintf("%s/download?url=%s&time=%d&nonce=%s&sign=%s",
+		proxy, url.QueryEscape(target), timestamp, nonce, signURL(target, timestamp, nonce))
 }
 
 func TestProxyEndToEnd(t *testing.T) {
@@ -85,7 +92,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "normal download",
 			makeURL: func() string {
 				timestamp := time.Now().Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp, nextNonce())
 			},
 			method:          http.MethodGet,
 			wantStatus:      http.StatusOK,
@@ -96,7 +103,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "redirect to allowed host",
 			makeURL: func() string {
 				timestamp := time.Now().Add(2 * time.Minute).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/redirect", timestamp)
+				return buildProxyURL(proxy.URL, upstream.URL+"/redirect", timestamp, nextNonce())
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusOK,
@@ -106,7 +113,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "redirect to disallowed host",
 			makeURL: func() string {
 				timestamp := time.Now().Add(2 * time.Minute).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/bad-redirect", timestamp)
+				return buildProxyURL(proxy.URL, upstream.URL+"/bad-redirect", timestamp, nextNonce())
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusBadGateway,
@@ -116,8 +123,9 @@ func TestProxyEndToEnd(t *testing.T) {
 			makeURL: func() string {
 				timestamp := time.Now().Add(2 * time.Minute).Unix()
 				target := upstream.URL + "/file"
-				return fmt.Sprintf("%s/download?url=%s&time=%d&sign=invalid",
-					proxy.URL, url.QueryEscape(target), timestamp)
+				nonce := nextNonce()
+				return fmt.Sprintf("%s/download?url=%s&time=%d&nonce=%s&sign=invalid",
+					proxy.URL, url.QueryEscape(target), timestamp, nonce)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusForbidden,
@@ -126,7 +134,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "expired timestamp",
 			makeURL: func() string {
 				timestamp := time.Now().Add(-2 * time.Hour).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp, nextNonce())
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusForbidden,
@@ -135,7 +143,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "future timestamp allowed",
 			makeURL: func() string {
 				timestamp := time.Now().Add(2 * time.Minute).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp, nextNonce())
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusOK,
@@ -145,7 +153,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "blocked domain",
 			makeURL: func() string {
 				timestamp := time.Now().Add(2 * time.Minute).Unix()
-				return buildProxyURL(proxy.URL, "https://evil.com/file", timestamp)
+				return buildProxyURL(proxy.URL, "https://evil.com/file", timestamp, nextNonce())
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusForbidden,
@@ -161,8 +169,9 @@ func TestProxyEndToEnd(t *testing.T) {
 		{
 			name: "malformed time",
 			makeURL: func() string {
-				return fmt.Sprintf("%s/download?url=%s&time=abc&sign=invalid",
-					proxy.URL, url.QueryEscape(upstream.URL+"/file"))
+				nonce := nextNonce()
+				return fmt.Sprintf("%s/download?url=%s&time=abc&nonce=%s&sign=invalid",
+					proxy.URL, url.QueryEscape(upstream.URL+"/file"), nonce)
 			},
 			method:     http.MethodGet,
 			wantStatus: http.StatusBadRequest,
@@ -171,7 +180,7 @@ func TestProxyEndToEnd(t *testing.T) {
 			name: "disallowed method",
 			makeURL: func() string {
 				timestamp := time.Now().Add(2 * time.Minute).Unix()
-				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp)
+				return buildProxyURL(proxy.URL, upstream.URL+"/file", timestamp, nextNonce())
 			},
 			method:     http.MethodPost,
 			wantStatus: http.StatusMethodNotAllowed,
@@ -209,5 +218,25 @@ func TestProxyEndToEnd(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestHandler_MissingNonce(t *testing.T) {
+	cfg := &config.Config{
+		Secret:           testSecret,
+		MaxExpireSeconds: 3600,
+		AllowedDomains:   []string{"example.com"},
+	}
+	p := New(cfg)
+
+	ts := time.Now().Unix()
+	target := "https://example.com/file"
+	sign := security.Sign(target, ts, "any", testSecret)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/download?url=%s&time=%d&sign=%s", url.QueryEscape(target), ts, sign), nil)
+	rr := httptest.NewRecorder()
+	p.Handler(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rr.Code)
 	}
 }

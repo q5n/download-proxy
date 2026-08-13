@@ -15,13 +15,17 @@ import (
 
 // Proxy wraps the configuration and HTTP client used to forward signed download requests.
 type Proxy struct {
-	Config *config.Config
-	Client *http.Client
+	Config     *config.Config
+	Client     *http.Client
+	NonceStore security.NonceStore
 }
 
 // New creates a new proxy instance with redirect protection enabled.
 func New(cfg *config.Config) *Proxy {
-	p := &Proxy{Config: cfg}
+	p := &Proxy{
+		Config:     cfg,
+		NonceStore: security.NewTimeBucketStore(5),
+	}
 	p.Client = &http.Client{
 		// Limit redirect hops and block redirects to disallowed hosts.
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -50,10 +54,11 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	target := q.Get("url")
 	timestampStr := q.Get("time")
+	nonce := q.Get("nonce")
 	sign := q.Get("sign")
 
-	if target == "" || timestampStr == "" || sign == "" {
-		log.Printf("missing request parameters target=%q time=%q signPresent=%t", target, timestampStr, sign != "")
+	if target == "" || timestampStr == "" || nonce == "" || sign == "" {
+		log.Printf("missing request parameters target=%q time=%q nonce=%q signPresent=%t", target, timestampStr, nonce, sign != "")
 		http.Error(w, "missing parameter", http.StatusBadRequest)
 		return
 	}
@@ -66,8 +71,8 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !security.Verify(target, timestamp, sign, p.Config.Secret, p.Config.MaxExpireSeconds) {
-		log.Printf("signature verification failed target=%s timestamp=%d", target, timestamp)
+	if !security.Verify(target, timestamp, nonce, sign, p.Config.Secret, p.Config.MaxExpireSeconds, p.NonceStore) {
+		log.Printf("signature verification failed target=%s timestamp=%d nonce=%s", target, timestamp, nonce)
 		http.Error(w, "invalid signature", http.StatusForbidden)
 		return
 	}

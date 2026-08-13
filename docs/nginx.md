@@ -73,9 +73,9 @@ server {
 ```
 
 With this configuration, a request to
-`https://download.example.com/ghdownload?url=...&time=...&sign=...`
+`https://download.example.com/ghdownload?url=...&time=...&nonce=...&sign=...`
 is proxied to
-`http://127.0.0.1:8001/download?url=...&time=...&sign=...`.
+`http://127.0.0.1:8001/download?url=...&time=...&nonce=...&sign=...`.
 
 ## Notes
 
