@@ -28,12 +28,15 @@ if (-not $secret) {
 $unixEpoch = New-Object DateTime (1970, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)
 $time = [int64](([DateTime]::UtcNow - $unixEpoch).TotalSeconds)
 
+# 生成随机 nonce
+$nonce = [System.Guid]::NewGuid().ToString("N")
+
 # URL 编码 target
 Add-Type -AssemblyName System.Web -ErrorAction Stop
 $targetEncoded = [System.Web.HttpUtility]::UrlEncode($TargetUrl)
 
 # HMAC-SHA256 签名
-$payload = "url=${TargetUrl}&time=${time}"
+$payload = "url=${TargetUrl}&time=${time}&nonce=${nonce}"
 Write-Host "payload: $payload"
 $hmac = New-Object System.Security.Cryptography.HMACSHA256
 $hmac.Key = [System.Text.Encoding]::UTF8.GetBytes($secret)
@@ -41,7 +44,7 @@ $hash = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($payload))
 $sign = ([BitConverter]::ToString($hash) -replace "-", "").ToLower()
 
 # 构造请求 URL
-$url = "${ProxyUrl}?url=${targetEncoded}&time=${time}&sign=${sign}"
+$url = "${ProxyUrl}?url=${targetEncoded}&time=${time}&nonce=${nonce}&sign=${sign}"
 
 Write-Host "Request URL: $url"
 Write-Host "Output file: $OutputPath"

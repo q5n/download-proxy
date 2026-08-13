@@ -57,6 +57,7 @@ if [ -z "$SECRET" ]; then
 fi
 
 TIME=$(date +%s)
+NONCE=$(openssl rand -hex 16)
 
 # URL 编码
 url_encode() {
@@ -79,10 +80,10 @@ url_encode() {
 }
 
 # HMAC-SHA256 签名
-SIGN=$(printf 'url=%s&time=%d' "$TARGET" "$TIME" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
+SIGN=$(printf 'url=%s&time=%d&nonce=%s' "$TARGET" "$TIME" "$NONCE" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
 
 TARGET_ENC=$(url_encode "$TARGET")
-URL="${PROXY}/download?url=${TARGET_ENC}&time=${TIME}&sign=${SIGN}"
+URL="${PROXY}/download?url=${TARGET_ENC}&time=${TIME}&nonce=${NONCE}&sign=${SIGN}"
 
 echo "Request URL: $URL"
 echo "Output file: $OUTPUT"
